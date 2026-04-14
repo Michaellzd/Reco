@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Reco needs camera access to record your webcam overlay</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Reco needs microphone access to record audio narration</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Reco needs screen recording access to capture your screen</string>
+</dict>
+</plist>
