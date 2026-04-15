@@ -15,6 +15,25 @@ struct CursorEvent: Codable {
     var visible: Bool
     /// Whether a click occurred at this moment
     var clicked: Bool
+    /// Click phase for ripple effect rendering
+    var clickPhase: ClickPhase?
+
+    /// Alias for `clicked`, used by CursorRenderer
+    var isClick: Bool { clicked }
+
+    enum ClickPhase: String, Codable {
+        case began
+        case ended
+    }
+
+    init(timestamp: Double, x: Double, y: Double, visible: Bool = true, clicked: Bool = false, clickPhase: ClickPhase? = nil) {
+        self.timestamp = timestamp
+        self.x = x
+        self.y = y
+        self.visible = visible
+        self.clicked = clicked
+        self.clickPhase = clickPhase
+    }
 }
 
 /// Complete cursor tracking data for a recording session.
@@ -25,6 +44,21 @@ struct CursorData: Codable {
     var screenWidth: Double
     /// Screen height used during recording
     var screenHeight: Double
+
+    /// Convenience accessor for CursorRenderer compatibility
+    var recordingSize: CGSize? {
+        CGSize(width: screenWidth, height: screenHeight)
+    }
+
+    init(events: [CursorEvent] = [], screenWidth: Double, screenHeight: Double) {
+        self.events = events
+        self.screenWidth = screenWidth
+        self.screenHeight = screenHeight
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case events, screenWidth, screenHeight
+    }
 }
 
 // MARK: - Errors

@@ -27,23 +27,15 @@ struct RecoApp: App {
                     }
                     .frame(width: 400, height: 300)
 
-                case .editing:
-                    // Placeholder for Task 5
-                    VStack(spacing: 12) {
-                        Image(systemName: "film")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.blue)
-                        Text("Editor — Task 5")
-                            .font(.headline)
-                    }
-                    .frame(width: 400, height: 300)
+                case .editing(let projectURL):
+                    EditorView(projectURL: projectURL)
                 }
             }
             .onChange(of: appState.phase) { oldPhase, newPhase in
                 handlePhaseTransition(from: oldPhase, to: newPhase)
             }
         }
-        .defaultSize(width: 400, height: 600)
+        .defaultSize(width: 1200, height: 800)
     }
 
     private func handlePhaseTransition(from oldPhase: AppPhase, to newPhase: AppPhase) {
@@ -52,10 +44,13 @@ struct RecoApp: App {
             let controller = RecordingPanelController(appState: appState)
             controller.showPanel()
             panelController = controller
+            // Pass the panel's window ID to AppState for capture exclusion
+            appState.excludedWindowID = controller.windowID
 
         case .setup, .editing:
             panelController?.hidePanel()
             panelController = nil
+            appState.excludedWindowID = nil
         }
     }
 }

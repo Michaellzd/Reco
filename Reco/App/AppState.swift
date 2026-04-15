@@ -18,91 +18,6 @@ enum AppPhase: Equatable {
     }
 }
 
-// MARK: - Mock Capture Engine
-
-/// A mock capture engine for development and testing.
-/// Conforms to CaptureEngineProtocol without requiring the real capture pipeline.
-final class MockCaptureEngine: CaptureEngineProtocol {
-    private(set) var state: CaptureState = .idle
-    private(set) var elapsedTime: TimeInterval = 0
-
-    private var timer: Timer?
-    private var recordingStartDate: Date?
-    private var accumulatedTime: TimeInterval = 0
-    private var bundleURL: URL?
-
-    func startRecording(config: RecordingConfig, outputDirectory: URL) async throws {
-        let bundleName = "recording-\(UUID().uuidString).reco"
-        let url = outputDirectory.appendingPathComponent(bundleName)
-        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-
-        bundleURL = url
-        state = .recording
-        accumulatedTime = 0
-        elapsedTime = 0
-        recordingStartDate = Date()
-
-        startTimer()
-    }
-
-    func pauseRecording() {
-        guard state == .recording else { return }
-        accumulatedTime += Date().timeIntervalSince(recordingStartDate ?? Date())
-        recordingStartDate = nil
-        state = .paused
-        stopTimer()
-    }
-
-    func resumeRecording() {
-        guard state == .paused else { return }
-        recordingStartDate = Date()
-        state = .recording
-        startTimer()
-    }
-
-    func stopRecording() async throws -> URL {
-        guard let url = bundleURL else {
-            throw MockCaptureError.noActiveRecording
-        }
-        if state == .recording {
-            accumulatedTime += Date().timeIntervalSince(recordingStartDate ?? Date())
-        }
-        stopTimer()
-        state = .idle
-        elapsedTime = accumulatedTime
-        return url
-    }
-
-    func discardRecording() {
-        stopTimer()
-        if let url = bundleURL {
-            try? FileManager.default.removeItem(at: url)
-        }
-        bundleURL = nil
-        state = .idle
-        elapsedTime = 0
-        accumulatedTime = 0
-    }
-
-    // MARK: - Timer
-
-    private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self, let start = self.recordingStartDate else { return }
-            self.elapsedTime = self.accumulatedTime + Date().timeIntervalSince(start)
-        }
-    }
-
-    private func stopTimer() {
-        timer?.invalidate()
-        timer = nil
-    }
-
-    enum MockCaptureError: Error {
-        case noActiveRecording
-    }
-}
-
 // MARK: - App State
 
 @Observable
@@ -119,7 +34,10 @@ final class AppState {
     private let engine: CaptureEngineProtocol
     private var timerTask: Task<Void, Never>?
 
-    init(engine: CaptureEngineProtocol = MockCaptureEngine()) {
+    /// Window ID of the recording panel, to be excluded from screen capture.
+    var excludedWindowID: CGWindowID?
+
+    init(engine: CaptureEngineProtocol = CaptureEngine()) {
         self.engine = engine
     }
 
@@ -129,6 +47,11 @@ final class AppState {
         let outputDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("Reco", isDirectory: true)
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+
+        // Pass excluded window ID to the engine's screen recorder
+        if let windowID = excludedWindowID, let captureEngine = engine as? CaptureEngine {
+            captureEngine.addExcludedWindow(windowID)
+        }
 
         try await engine.startRecording(config: recordingConfig, outputDirectory: outputDir)
         isRecording = true
@@ -164,6 +87,11 @@ final class AppState {
         isRecording = false
         isPaused = false
         elapsedTime = 0
+        phase = .setup
+    }
+
+    /// Return to setup phase from editor (new recording)
+    func newRecording() {
         phase = .setup
     }
 

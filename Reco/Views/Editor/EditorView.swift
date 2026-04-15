@@ -5,7 +5,7 @@ import SwiftUI
 struct EditorView: View {
     @State var editorState: EditorState
 
-    init(projectURL: URL, duration: TimeInterval = 57 * 60 + 31) {
+    init(projectURL: URL, duration: TimeInterval = 0) {
         _editorState = State(initialValue: EditorState(projectURL: projectURL, duration: duration))
     }
 

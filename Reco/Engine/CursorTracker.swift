@@ -1,22 +1,9 @@
 import Foundation
 import AppKit
 import ScreenCaptureKit
+import CoreMedia
 
-// MARK: - Cursor Data Models
-
-struct CursorEvent: Codable {
-    let timestamp: TimeInterval
-    let x: Double
-    let y: Double
-    let visible: Bool
-    let clicked: Bool
-}
-
-struct CursorData: Codable {
-    var events: [CursorEvent] = []
-    var screenWidth: Int
-    var screenHeight: Int
-}
+// CursorEvent and CursorData are defined in ProjectBundle.swift (canonical source)
 
 // MARK: - CursorTracker
 
@@ -26,8 +13,8 @@ final class CursorTracker: @unchecked Sendable {
 
     private let queue = DispatchQueue(label: "com.reco.cursorTracker", qos: .utility)
     private var events: [CursorEvent] = []
-    private var screenWidth: Int = 0
-    private var screenHeight: Int = 0
+    private var screenWidth: Double = 0
+    private var screenHeight: Double = 0
     private var startTime: CMTime = .zero
     private var clickMonitor: Any?
     private var clickUpMonitor: Any?
@@ -39,8 +26,8 @@ final class CursorTracker: @unchecked Sendable {
     func start(screenWidth: Int, screenHeight: Int, startTime: CMTime, outputURL: URL) {
         queue.sync {
             self.events.removeAll()
-            self.screenWidth = screenWidth
-            self.screenHeight = screenHeight
+            self.screenWidth = Double(screenWidth)
+            self.screenHeight = Double(screenHeight)
             self.startTime = startTime
             self.outputURL = outputURL
             self.isClicked = false
@@ -77,7 +64,7 @@ final class CursorTracker: @unchecked Sendable {
         let event = CursorEvent(
             timestamp: timestamp,
             x: mouseLocation.x,
-            y: Double(screenHeight) - mouseLocation.y, // Flip Y coordinate (AppKit uses bottom-left origin)
+            y: screenHeight - mouseLocation.y, // Flip Y coordinate (AppKit uses bottom-left origin)
             visible: true,
             clicked: clicked
         )

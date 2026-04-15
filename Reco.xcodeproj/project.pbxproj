@@ -12,6 +12,35 @@
 		A1000003 /* EditSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000003 /* EditSettings.swift */; };
 		A1000004 /* CaptureEngineProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000004 /* CaptureEngineProtocol.swift */; };
 		A1000005 /* CompositorProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000005 /* CompositorProtocol.swift */; };
+		B1000001 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000001 /* CaptureEngine.swift */; };
+		B1000002 /* ScreenRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000002 /* ScreenRecorder.swift */; };
+		B1000003 /* CameraRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000003 /* CameraRecorder.swift */; };
+		B1000004 /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000004 /* AudioRecorder.swift */; };
+		B1000005 /* CursorTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000005 /* CursorTracker.swift */; };
+		B1000006 /* ProjectBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000006 /* ProjectBundle.swift */; };
+		B1000007 /* ProjectMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000007 /* ProjectMetadata.swift */; };
+		B1000008 /* RecordingConfig+Codable.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000008 /* RecordingConfig+Codable.swift */; };
+		B1000009 /* Compositor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000009 /* Compositor.swift */; };
+		B100000A /* FrameRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000A /* FrameRenderer.swift */; };
+		B100000B /* CursorRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000B /* CursorRenderer.swift */; };
+		B100000C /* CameraRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000C /* CameraRenderer.swift */; };
+		B100000D /* BackgroundRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000D /* BackgroundRenderer.swift */; };
+		B100000E /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000E /* AppState.swift */; };
+		B100000F /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000F /* PermissionManager.swift */; };
+		B1000010 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000010 /* SetupView.swift */; };
+		B1000011 /* RecordModeSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000011 /* RecordModeSelector.swift */; };
+		B1000012 /* ScreenSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000012 /* ScreenSelector.swift */; };
+		B1000013 /* RecordingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000013 /* RecordingPanel.swift */; };
+		B1000014 /* RecordingPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000014 /* RecordingPanelController.swift */; };
+		B1000015 /* EditorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000015 /* EditorState.swift */; };
+		B1000016 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000016 /* EditorView.swift */; };
+		B1000017 /* VideoPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000017 /* VideoPreview.swift */; };
+		B1000018 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000018 /* TimelineView.swift */; };
+		B1000019 /* SettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000019 /* SettingsPanel.swift */; };
+		B100001A /* BackgroundPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001A /* BackgroundPanel.swift */; };
+		B100001B /* CursorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001B /* CursorPanel.swift */; };
+		B100001C /* CameraPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001C /* CameraPanel.swift */; };
+		B100001D /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001D /* ExportView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +52,35 @@
 		A2000010 /* Reco.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Reco.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000012 /* Reco.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Reco.entitlements; sourceTree = "<group>"; };
+		B2000001 /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
+		B2000002 /* ScreenRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRecorder.swift; sourceTree = "<group>"; };
+		B2000003 /* CameraRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRecorder.swift; sourceTree = "<group>"; };
+		B2000004 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
+		B2000005 /* CursorTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTracker.swift; sourceTree = "<group>"; };
+		B2000006 /* ProjectBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectBundle.swift; sourceTree = "<group>"; };
+		B2000007 /* ProjectMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMetadata.swift; sourceTree = "<group>"; };
+		B2000008 /* RecordingConfig+Codable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RecordingConfig+Codable.swift"; sourceTree = "<group>"; };
+		B2000009 /* Compositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compositor.swift; sourceTree = "<group>"; };
+		B200000A /* FrameRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRenderer.swift; sourceTree = "<group>"; };
+		B200000B /* CursorRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorRenderer.swift; sourceTree = "<group>"; };
+		B200000C /* CameraRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRenderer.swift; sourceTree = "<group>"; };
+		B200000D /* BackgroundRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRenderer.swift; sourceTree = "<group>"; };
+		B200000E /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		B200000F /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		B2000010 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
+		B2000011 /* RecordModeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordModeSelector.swift; sourceTree = "<group>"; };
+		B2000012 /* ScreenSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSelector.swift; sourceTree = "<group>"; };
+		B2000013 /* RecordingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPanel.swift; sourceTree = "<group>"; };
+		B2000014 /* RecordingPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPanelController.swift; sourceTree = "<group>"; };
+		B2000015 /* EditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorState.swift; sourceTree = "<group>"; };
+		B2000016 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
+		B2000017 /* VideoPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPreview.swift; sourceTree = "<group>"; };
+		B2000018 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
+		B2000019 /* SettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPanel.swift; sourceTree = "<group>"; };
+		B200001A /* BackgroundPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPanel.swift; sourceTree = "<group>"; };
+		B200001B /* CursorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorPanel.swift; sourceTree = "<group>"; };
+		B200001C /* CameraPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPanel.swift; sourceTree = "<group>"; };
+		B200001D /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +129,8 @@
 			isa = PBXGroup;
 			children = (
 				A2000001 /* RecoApp.swift */,
+				B200000E /* AppState.swift */,
+				B200000F /* PermissionManager.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -78,6 +138,19 @@
 		A4000004 /* Engine */ = {
 			isa = PBXGroup;
 			children = (
+				B2000001 /* CaptureEngine.swift */,
+				B2000002 /* ScreenRecorder.swift */,
+				B2000003 /* CameraRecorder.swift */,
+				B2000004 /* AudioRecorder.swift */,
+				B2000005 /* CursorTracker.swift */,
+				B2000006 /* ProjectBundle.swift */,
+				B2000007 /* ProjectMetadata.swift */,
+				B2000008 /* RecordingConfig+Codable.swift */,
+				B2000009 /* Compositor.swift */,
+				B200000A /* FrameRenderer.swift */,
+				B200000B /* CursorRenderer.swift */,
+				B200000C /* CameraRenderer.swift */,
+				B200000D /* BackgroundRenderer.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -95,6 +168,9 @@
 		A4000006 /* Setup */ = {
 			isa = PBXGroup;
 			children = (
+				B2000010 /* SetupView.swift */,
+				B2000011 /* RecordModeSelector.swift */,
+				B2000012 /* ScreenSelector.swift */,
 			);
 			path = Setup;
 			sourceTree = "<group>";
@@ -102,6 +178,8 @@
 		A4000007 /* Recording */ = {
 			isa = PBXGroup;
 			children = (
+				B2000013 /* RecordingPanel.swift */,
+				B2000014 /* RecordingPanelController.swift */,
 			);
 			path = Recording;
 			sourceTree = "<group>";
@@ -109,6 +187,15 @@
 		A4000008 /* Editor */ = {
 			isa = PBXGroup;
 			children = (
+				B2000015 /* EditorState.swift */,
+				B2000016 /* EditorView.swift */,
+				B2000017 /* VideoPreview.swift */,
+				B2000018 /* TimelineView.swift */,
+				B2000019 /* SettingsPanel.swift */,
+				B200001A /* BackgroundPanel.swift */,
+				B200001B /* CursorPanel.swift */,
+				B200001C /* CameraPanel.swift */,
+				B200001D /* ExportView.swift */,
 			);
 			path = Editor;
 			sourceTree = "<group>";
@@ -219,6 +306,35 @@
 				A1000003 /* EditSettings.swift in Sources */,
 				A1000004 /* CaptureEngineProtocol.swift in Sources */,
 				A1000005 /* CompositorProtocol.swift in Sources */,
+				B1000001 /* CaptureEngine.swift in Sources */,
+				B1000002 /* ScreenRecorder.swift in Sources */,
+				B1000003 /* CameraRecorder.swift in Sources */,
+				B1000004 /* AudioRecorder.swift in Sources */,
+				B1000005 /* CursorTracker.swift in Sources */,
+				B1000006 /* ProjectBundle.swift in Sources */,
+				B1000007 /* ProjectMetadata.swift in Sources */,
+				B1000008 /* RecordingConfig+Codable.swift in Sources */,
+				B1000009 /* Compositor.swift in Sources */,
+				B100000A /* FrameRenderer.swift in Sources */,
+				B100000B /* CursorRenderer.swift in Sources */,
+				B100000C /* CameraRenderer.swift in Sources */,
+				B100000D /* BackgroundRenderer.swift in Sources */,
+				B100000E /* AppState.swift in Sources */,
+				B100000F /* PermissionManager.swift in Sources */,
+				B1000010 /* SetupView.swift in Sources */,
+				B1000011 /* RecordModeSelector.swift in Sources */,
+				B1000012 /* ScreenSelector.swift in Sources */,
+				B1000013 /* RecordingPanel.swift in Sources */,
+				B1000014 /* RecordingPanelController.swift in Sources */,
+				B1000015 /* EditorState.swift in Sources */,
+				B1000016 /* EditorView.swift in Sources */,
+				B1000017 /* VideoPreview.swift in Sources */,
+				B1000018 /* TimelineView.swift in Sources */,
+				B1000019 /* SettingsPanel.swift in Sources */,
+				B100001A /* BackgroundPanel.swift in Sources */,
+				B100001B /* CursorPanel.swift in Sources */,
+				B100001C /* CameraPanel.swift in Sources */,
+				B100001D /* ExportView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

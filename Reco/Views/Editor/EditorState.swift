@@ -4,148 +4,6 @@ import CoreMedia
 import SwiftUI
 import AVFoundation
 
-// MARK: - Mock Compositor
-
-/// A mock compositor for development. Returns placeholder images and simulates export progress.
-/// Will be replaced by the real Compositor when Task 3 merges.
-final class MockCompositor: CompositorProtocol {
-    func renderPreviewFrame(
-        projectURL: URL,
-        settings: EditSettings,
-        at time: CMTime
-    ) async throws -> CGImage {
-        // Create a placeholder colored rectangle
-        let width = 1280
-        let height = 720
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let context = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: width * 4,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            throw MockCompositorError.cannotCreateContext
-        }
-
-        // Draw background based on settings
-        let bgColor: CGColor
-        switch settings.background.type {
-        case .solidColor:
-            bgColor = NSColor(hex: settings.background.solidColor)?.cgColor
-                ?? CGColor(red: 0.15, green: 0.15, blue: 0.2, alpha: 1)
-        case .gradient:
-            bgColor = CGColor(red: 0.1, green: 0.1, blue: 0.3, alpha: 1)
-        case .wallpaper:
-            bgColor = CGColor(red: 0.2, green: 0.3, blue: 0.4, alpha: 1)
-        case .customImage:
-            bgColor = CGColor(red: 0.3, green: 0.2, blue: 0.3, alpha: 1)
-        }
-
-        context.setFillColor(bgColor)
-        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-
-        // Draw a "screen" rectangle in the center
-        let scale = settings.background.screenScale / 100.0
-        let screenW = Double(width) * scale * 0.8
-        let screenH = Double(height) * scale * 0.8
-        let screenX = (Double(width) - screenW) / 2
-        let screenY = (Double(height) - screenH) / 2
-        let radius = settings.background.cornerRadius
-
-        let screenRect = CGRect(x: screenX, y: screenY, width: screenW, height: screenH)
-        let path = CGPath(roundedRect: screenRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-        context.setFillColor(CGColor(red: 0.3, green: 0.3, blue: 0.35, alpha: 1))
-        context.addPath(path)
-        context.fillPath()
-
-        // Draw camera circle if not hidden
-        if !settings.camera.hidden {
-            let camSize = min(Double(width), Double(height)) * settings.camera.size / 100.0
-            let camX: Double
-            let camY: Double
-            switch settings.camera.position {
-            case .topLeft: camX = 20; camY = Double(height) - camSize - 20
-            case .topCenter: camX = (Double(width) - camSize) / 2; camY = Double(height) - camSize - 20
-            case .topRight: camX = Double(width) - camSize - 20; camY = Double(height) - camSize - 20
-            case .middleLeft: camX = 20; camY = (Double(height) - camSize) / 2
-            case .middleCenter: camX = (Double(width) - camSize) / 2; camY = (Double(height) - camSize) / 2
-            case .middleRight: camX = Double(width) - camSize - 20; camY = (Double(height) - camSize) / 2
-            case .bottomLeft: camX = 20; camY = 20
-            case .bottomCenter: camX = (Double(width) - camSize) / 2; camY = 20
-            case .bottomRight: camX = Double(width) - camSize - 20; camY = 20
-            }
-            context.setFillColor(CGColor(red: 0.5, green: 0.6, blue: 0.7, alpha: 0.8))
-            if settings.camera.shape == .circle {
-                context.fillEllipse(in: CGRect(x: camX, y: camY, width: camSize, height: camSize))
-            } else {
-                let camRect = CGRect(x: camX, y: camY, width: camSize, height: camSize)
-                let camPath = CGPath(
-                    roundedRect: camRect,
-                    cornerWidth: settings.camera.cornerRadius,
-                    cornerHeight: settings.camera.cornerRadius,
-                    transform: nil
-                )
-                context.addPath(camPath)
-                context.fillPath()
-            }
-        }
-
-        // Draw playhead time indicator text area
-        let seconds = CMTimeGetSeconds(time)
-        let timeStr = String(format: "%.1fs", seconds)
-        context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.7))
-        context.fill(CGRect(x: Double(width) / 2 - 30, y: Double(height) / 2 - 10, width: 60, height: 20))
-
-        guard let image = context.makeImage() else {
-            throw MockCompositorError.cannotCreateImage
-        }
-        return image
-    }
-
-    func export(
-        projectURL: URL,
-        settings: EditSettings,
-        outputURL: URL,
-        progress: @escaping (Double) -> Void
-    ) async throws {
-        // Simulate export over ~3 seconds
-        let steps = 30
-        for i in 0...steps {
-            try Task.checkCancellation()
-            progress(Double(i) / Double(steps))
-            try await Task.sleep(for: .milliseconds(100))
-        }
-    }
-
-    enum MockCompositorError: Error {
-        case cannotCreateContext
-        case cannotCreateImage
-    }
-}
-
-// MARK: - NSColor Hex Extension (for mock)
-
-private extension NSColor {
-    convenience init?(hex: String) {
-        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
-
-        guard hexSanitized.count == 6,
-              let hexNumber = UInt64(hexSanitized, radix: 16) else {
-            return nil
-        }
-
-        let r = CGFloat((hexNumber & 0xFF0000) >> 16) / 255.0
-        let g = CGFloat((hexNumber & 0x00FF00) >> 8) / 255.0
-        let b = CGFloat(hexNumber & 0x0000FF) / 255.0
-
-        self.init(red: r, green: g, blue: b, alpha: 1.0)
-    }
-}
-
 // MARK: - Editor State
 
 @Observable
@@ -193,22 +51,61 @@ final class EditorState {
     // MARK: - Dependencies
 
     private let compositor: CompositorProtocol
+    private var projectBundle: ProjectBundle?
 
     // MARK: - Playback Timer
 
     private var playbackTask: Task<Void, Never>?
 
+    /// Debounce timer for saving settings
+    private var saveSettingsTask: Task<Void, Never>?
+
     // MARK: - Init
 
     init(
         projectURL: URL,
-        duration: TimeInterval = 57 * 60 + 31, // Default mock: 57:31
-        compositor: CompositorProtocol = MockCompositor()
+        duration: TimeInterval = 0,
+        compositor: CompositorProtocol = Compositor()
     ) {
         self.projectURL = projectURL
         self.duration = duration
         self.trimEnd = duration
         self.compositor = compositor
+
+        // Load project bundle data
+        loadProjectBundle()
+    }
+
+    // MARK: - Project Bundle Loading
+
+    private func loadProjectBundle() {
+        do {
+            let bundle = try ProjectBundle.open(at: projectURL)
+            self.projectBundle = bundle
+            self.editSettings = bundle.editSettings
+            self.duration = bundle.metadata.duration
+            self.trimEnd = bundle.metadata.duration
+
+            // If duration is 0 (not yet set in metadata), try to read from the screen.mov asset
+            if duration <= 0 {
+                loadDurationFromAsset()
+            }
+        } catch {
+            print("[EditorState] Failed to open project bundle: \(error). Using defaults.")
+            // Fall back to reading duration from screen.mov directly
+            loadDurationFromAsset()
+        }
+    }
+
+    private func loadDurationFromAsset() {
+        let screenURL = projectURL.appendingPathComponent("screen.mov")
+        guard FileManager.default.fileExists(atPath: screenURL.path) else { return }
+        let asset = AVURLAsset(url: screenURL)
+        let assetDuration = CMTimeGetSeconds(asset.duration)
+        if assetDuration > 0 {
+            self.duration = assetDuration
+            self.trimEnd = assetDuration
+        }
     }
 
     // MARK: - Preview
@@ -464,6 +361,14 @@ final class EditorState {
     func settingsDidChange() {
         if !isPlaying {
             Task { await updatePreview() }
+        }
+        // Debounced save to project bundle
+        saveSettingsTask?.cancel()
+        saveSettingsTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            self.projectBundle?.editSettings = self.editSettings
+            try? self.projectBundle?.saveEditSettings()
         }
     }
 }

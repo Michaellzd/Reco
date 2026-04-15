@@ -2,48 +2,7 @@ import Foundation
 import CoreImage
 import AppKit
 
-// MARK: - Cursor Data Types
-
-/// A single cursor event from cursor.json.
-struct CursorEvent: Codable {
-    let timestamp: Double      // seconds from recording start
-    let x: Double              // x position in recording coordinates
-    let y: Double              // y position in recording coordinates
-    let isClick: Bool          // whether a click is active at this moment
-    let clickPhase: ClickPhase?
-
-    enum ClickPhase: String, Codable {
-        case began
-        case ended
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case timestamp, x, y, isClick, clickPhase
-    }
-
-    init(timestamp: Double, x: Double, y: Double, isClick: Bool = false, clickPhase: ClickPhase? = nil) {
-        self.timestamp = timestamp
-        self.x = x
-        self.y = y
-        self.isClick = isClick
-        self.clickPhase = clickPhase
-    }
-}
-
-/// Container for all cursor events in a recording.
-struct CursorData: Codable {
-    let events: [CursorEvent]
-    let recordingSize: CGSize?
-
-    enum CodingKeys: String, CodingKey {
-        case events, recordingSize
-    }
-
-    init(events: [CursorEvent], recordingSize: CGSize? = nil) {
-        self.events = events
-        self.recordingSize = recordingSize
-    }
-}
+// CursorEvent and CursorData are defined in ProjectBundle.swift (canonical source)
 
 // MARK: - Cursor Renderer
 

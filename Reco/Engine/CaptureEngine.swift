@@ -43,9 +43,20 @@ final class CaptureEngine: NSObject, CaptureEngineProtocol, @unchecked Sendable 
     private var audioRecorder: AudioRecorder?
     private var cursorTracker: CursorTracker?
 
+    // MARK: - Window Exclusion
+
+    private var pendingExcludedWindows: [CGWindowID] = []
+
+    /// Add a window ID to be excluded from screen capture.
+    /// Must be called before startRecording().
+    func addExcludedWindow(_ windowID: CGWindowID) {
+        pendingExcludedWindows.append(windowID)
+    }
+
     // MARK: - State
 
     private var bundleURL: URL?
+    private var recordingConfig: RecordingConfig?
     private var recordingStartDate: Date?
     private var pauseAccumulated: TimeInterval = 0
     private var lastPauseDate: Date?
@@ -66,6 +77,7 @@ final class CaptureEngine: NSObject, CaptureEngineProtocol, @unchecked Sendable 
 
         try FileManager.default.createDirectory(at: bundlePath, withIntermediateDirectories: true)
         self.bundleURL = bundlePath
+        self.recordingConfig = config
 
         // 2. Query SCShareableContent for available displays
         let availableContent = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -82,6 +94,11 @@ final class CaptureEngine: NSObject, CaptureEngineProtocol, @unchecked Sendable 
             : nil
 
         let screen = ScreenRecorder()
+        // Pass any excluded window IDs (e.g., the recording panel)
+        for windowID in pendingExcludedWindows {
+            screen.addExcludedWindow(windowID)
+        }
+        pendingExcludedWindows.removeAll()
         self.screenRecorder = screen
 
         // 4. Start cursor tracker
@@ -202,10 +219,16 @@ final class CaptureEngine: NSObject, CaptureEngineProtocol, @unchecked Sendable 
 
         cursorTracker?.stop()
 
+        // Write metadata.json so the editor can open the bundle
+        writeMetadata(to: bundleURL)
+
+        // Save the URL before resetting state
+        let resultURL = bundleURL
+
         // Clean up
         resetState()
 
-        return bundleURL
+        return resultURL
     }
 
     // MARK: - Discard Recording
@@ -229,6 +252,31 @@ final class CaptureEngine: NSObject, CaptureEngineProtocol, @unchecked Sendable 
         }
     }
 
+    // MARK: - Metadata
+
+    private func writeMetadata(to bundleURL: URL) {
+        let config = recordingConfig ?? RecordingConfig()
+        let fm = FileManager.default
+
+        var metadata = ProjectMetadata.makeDefault(config: config)
+        metadata.createdAt = recordingStartDate ?? Date()
+        metadata.duration = elapsedTime
+        metadata.hasCamera = fm.fileExists(atPath: bundleURL.appendingPathComponent("camera.mov").path)
+        metadata.hasMicAudio = fm.fileExists(atPath: bundleURL.appendingPathComponent("audio-mic.caf").path)
+        metadata.hasSystemAudio = fm.fileExists(atPath: bundleURL.appendingPathComponent("audio-system.caf").path)
+        metadata.hasCursorData = fm.fileExists(atPath: bundleURL.appendingPathComponent("cursor.json").path)
+
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(metadata)
+            try data.write(to: bundleURL.appendingPathComponent("metadata.json"), options: .atomic)
+        } catch {
+            print("[CaptureEngine] Failed to write metadata.json: \(error)")
+        }
+    }
+
     // MARK: - Private Helpers
 
     private func resetState() {
@@ -237,6 +285,7 @@ final class CaptureEngine: NSObject, CaptureEngineProtocol, @unchecked Sendable 
         audioRecorder = nil
         cursorTracker = nil
         bundleURL = nil
+        recordingConfig = nil
         recordingStartDate = nil
         pauseAccumulated = 0
         lastPauseDate = nil
