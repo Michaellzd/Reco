@@ -45,7 +45,7 @@ final class CameraRenderer {
     /// For preview (random access), creates a new reader seeking to the time.
     func readFrame(at time: CMTime, from cameraURL: URL) -> CIImage? {
         // For random-access preview: create a one-shot reader
-        guard let asset = try? AVAsset(url: cameraURL) as AVAsset else { return nil }
+        let asset = AVAsset(url: cameraURL)
         guard let reader = try? AVAssetReader(asset: asset) else { return nil }
 
         let videoTracks = asset.tracks(withMediaType: .video)

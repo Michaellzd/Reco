@@ -27,7 +27,7 @@ final class Compositor: CompositorProtocol {
         let screenURL = projectURL.appendingPathComponent("screen.mov")
 
         // Read a single frame from screen.mov
-        let screenFrame = try readSingleFrame(from: screenURL, at: time)
+        let screenFrame = try await readSingleFrame(from: screenURL, at: time)
         let screenSize = screenFrame.extent.size
 
         // Determine output size (same as screen recording size)
@@ -94,6 +94,8 @@ final class Compositor: CompositorProtocol {
         projectURL: URL,
         settings: EditSettings,
         outputURL: URL,
+        format: ExportFormat,
+        resolution: ExportResolution,
         progress: @escaping (Double) -> Void
     ) async throws {
         let screenURL = projectURL.appendingPathComponent("screen.mov")
@@ -127,7 +129,12 @@ final class Compositor: CompositorProtocol {
 
         // Get video properties
         let naturalSize = screenVideoTrack.naturalSize
-        let outputSize = naturalSize
+        let exportConfiguration = makeExportConfiguration(
+            format: format,
+            resolution: resolution,
+            sourceSize: naturalSize
+        )
+        let outputSize = exportConfiguration.outputSize
         let duration = screenAsset.duration
         let totalSeconds = CMTimeGetSeconds(duration)
 
@@ -146,17 +153,21 @@ final class Compositor: CompositorProtocol {
         )
 
         // Set up asset writer
-        let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
+        let writer = try AVAssetWriter(outputURL: outputURL, fileType: exportConfiguration.fileType)
+
+        var compressionProperties: [String: Any] = [
+            AVVideoAverageBitRateKey: exportConfiguration.averageBitRate,
+            AVVideoExpectedSourceFrameRateKey: settings.fps
+        ]
+        if let profileLevel = exportConfiguration.profileLevel {
+            compressionProperties[AVVideoProfileLevelKey] = profileLevel
+        }
 
         let videoSettings: [String: Any] = [
-            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoCodecKey: exportConfiguration.codec,
             AVVideoWidthKey: Int(outputSize.width),
             AVVideoHeightKey: Int(outputSize.height),
-            AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: Int(outputSize.width * outputSize.height) * 8,
-                AVVideoExpectedSourceFrameRateKey: settings.fps,
-                AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel
-            ]
+            AVVideoCompressionPropertiesKey: compressionProperties
         ]
         let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
         videoInput.expectsMediaDataInRealTime = false
@@ -196,9 +207,6 @@ final class Compositor: CompositorProtocol {
         )
 
         // Process video frames
-        var outputPTS = CMTime.zero
-        let frameDuration = CMTime(value: 1, timescale: CMTimeScale(settings.fps))
-
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let processingQueue = DispatchQueue(label: "com.reco.compositor.export")
 
@@ -220,19 +228,7 @@ final class Compositor: CompositorProtocol {
                     guard let sampleBuffer = screenOutput.copyNextSampleBuffer() else {
                         // Done reading video
                         videoInput.markAsFinished()
-
-                        // Finish audio inputs
-                        for audioInput in audioInputs {
-                            audioInput.writerInput.markAsFinished()
-                        }
-
-                        writer.finishWriting {
-                            if let error = writer.error {
-                                continuation.resume(throwing: CompositorError.writerFailed(error))
-                            } else {
-                                continuation.resume()
-                            }
-                        }
+                        continuation.resume()
                         return
                     }
 
@@ -246,7 +242,7 @@ final class Compositor: CompositorProtocol {
 
                     // Get the remapped output time
                     let remappedTime = trimMap.remappedTime(for: timeSeconds)
-                    outputPTS = CMTime(seconds: remappedTime, preferredTimescale: 600)
+                    let outputPTS = CMTime(seconds: remappedTime, preferredTimescale: 600)
 
                     // Extract pixel buffer
                     guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
@@ -309,6 +305,12 @@ final class Compositor: CompositorProtocol {
             trimMap: trimMap
         )
 
+        for audioInput in audioInputs {
+            audioInput.writerInput.markAsFinished()
+        }
+
+        try await finishWriting(writer)
+
         progress(1.0)
 
         // Cleanup
@@ -318,38 +320,16 @@ final class Compositor: CompositorProtocol {
     // MARK: - Private Helpers
 
     /// Read a single video frame at the given time for preview.
-    private func readSingleFrame(from url: URL, at time: CMTime) throws -> CIImage {
+    private func readSingleFrame(from url: URL, at time: CMTime) async throws -> CIImage {
         let asset = AVAsset(url: url)
-        let reader = try AVAssetReader(asset: asset)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.requestedTimeToleranceBefore = CMTime(value: 1, timescale: 60)
+        generator.requestedTimeToleranceAfter = CMTime(value: 1, timescale: 60)
 
-        guard let videoTrack = asset.tracks(withMediaType: .video).first else {
-            throw CompositorError.noVideoTrack
-        }
-
-        let outputSettings: [String: Any] = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
-        ]
-        let output = AVAssetReaderTrackOutput(track: videoTrack, outputSettings: outputSettings)
-        output.alwaysCopiesSampleData = false
-
-        // Set time range to read just around the requested time
-        let tolerance = CMTime(value: 1, timescale: 30)
-        reader.timeRange = CMTimeRange(
-            start: max(time, .zero),
-            duration: tolerance
-        )
-        reader.add(output)
-
-        guard reader.startReading() else {
-            throw CompositorError.readerFailed(reader.error)
-        }
-
-        guard let sampleBuffer = output.copyNextSampleBuffer(),
-              let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-            throw CompositorError.failedToReadFrame
-        }
-
-        return CIImage(cvPixelBuffer: pixelBuffer)
+        let safeTime = max(time, .zero)
+        let (image, _) = try await generator.image(at: safeTime)
+        return CIImage(cgImage: image)
     }
 
     /// Create a pixel buffer from a CIImage, using the pool if available.
@@ -395,6 +375,87 @@ final class Compositor: CompositorProtocol {
             colorSpace: CGColorSpaceCreateDeviceRGB()
         )
         return buffer
+    }
+
+    private func finishWriting(_ writer: AVAssetWriter) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            writer.finishWriting {
+                if let error = writer.error {
+                    continuation.resume(throwing: CompositorError.writerFailed(error))
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    private func makeExportConfiguration(
+        format: ExportFormat,
+        resolution: ExportResolution,
+        sourceSize: CGSize
+    ) -> ExportConfiguration {
+        let outputSize = resolvedOutputSize(for: resolution, sourceSize: sourceSize)
+
+        switch format {
+        case .mp4:
+            return ExportConfiguration(
+                fileType: .mp4,
+                codec: .h264,
+                outputSize: outputSize,
+                averageBitRate: Int(outputSize.width * outputSize.height) * 8,
+                profileLevel: AVVideoProfileLevelH264HighAutoLevel
+            )
+        case .hevc:
+            return ExportConfiguration(
+                fileType: .mp4,
+                codec: .hevc,
+                outputSize: outputSize,
+                averageBitRate: Int(outputSize.width * outputSize.height) * 6,
+                profileLevel: nil
+            )
+        case .proRes:
+            return ExportConfiguration(
+                fileType: .mov,
+                codec: .proRes422,
+                outputSize: outputSize,
+                averageBitRate: Int(outputSize.width * outputSize.height) * 12,
+                profileLevel: nil
+            )
+        }
+    }
+
+    private func resolvedOutputSize(for resolution: ExportResolution, sourceSize: CGSize) -> CGSize {
+        guard sourceSize.width > 0, sourceSize.height > 0 else {
+            return CGSize(width: 1920, height: 1080)
+        }
+
+        if resolution == .original {
+            return evenSize(sourceSize)
+        }
+
+        let targetBounds: CGSize = switch resolution {
+        case .p720:
+            CGSize(width: 1280, height: 720)
+        case .p1080:
+            CGSize(width: 1920, height: 1080)
+        case .p4K:
+            CGSize(width: 3840, height: 2160)
+        case .original:
+            sourceSize
+        }
+
+        let scale = min(
+            targetBounds.width / sourceSize.width,
+            targetBounds.height / sourceSize.height,
+            1.0
+        )
+        return evenSize(CGSize(width: sourceSize.width * scale, height: sourceSize.height * scale))
+    }
+
+    private func evenSize(_ size: CGSize) -> CGSize {
+        let width = max(CGFloat(2), floor(size.width / 2) * 2)
+        let height = max(CGFloat(2), floor(size.height / 2) * 2)
+        return CGSize(width: width, height: height)
     }
 
     // MARK: - Audio
@@ -469,13 +530,19 @@ final class Compositor: CompositorProtocol {
                 let timeSeconds = CMTimeGetSeconds(pts)
 
                 guard trimMap.shouldKeep(timestamp: timeSeconds) else { continue }
+                let remappedTime = CMTime(
+                    seconds: trimMap.remappedTime(for: timeSeconds),
+                    preferredTimescale: 600
+                )
 
                 // Wait for writer input to be ready
                 while !audioIO.writerInput.isReadyForMoreMediaData {
                     try await Task.sleep(nanoseconds: 10_000_000) // 10ms
                 }
 
-                audioIO.writerInput.append(sampleBuffer)
+                if let adjusted = sampleBuffer.adjustingTimestamp(to: remappedTime) {
+                    audioIO.writerInput.append(adjusted)
+                }
             }
         }
     }
@@ -582,8 +649,36 @@ enum CompositorError: Error, LocalizedError {
     }
 }
 
+private struct ExportConfiguration {
+    let fileType: AVFileType
+    let codec: AVVideoCodecType
+    let outputSize: CGSize
+    let averageBitRate: Int
+    let profileLevel: String?
+}
+
 // MARK: - CMTime Helpers
 
 private func max(_ a: CMTime, _ b: CMTime) -> CMTime {
     return CMTimeCompare(a, b) >= 0 ? a : b
+}
+
+private extension CMSampleBuffer {
+    func adjustingTimestamp(to newPTS: CMTime) -> CMSampleBuffer? {
+        var timingInfo = CMSampleTimingInfo(
+            duration: CMSampleBufferGetDuration(self),
+            presentationTimeStamp: newPTS,
+            decodeTimeStamp: .invalid
+        )
+        var newBuffer: CMSampleBuffer?
+        let status = CMSampleBufferCreateCopyWithNewTiming(
+            allocator: kCFAllocatorDefault,
+            sampleBuffer: self,
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timingInfo,
+            sampleBufferOut: &newBuffer
+        )
+        guard status == noErr else { return nil }
+        return newBuffer
+    }
 }

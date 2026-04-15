@@ -38,7 +38,7 @@ struct CursorPanel: View {
                             }
                             .font(.caption2)
                             .buttonStyle(.plain)
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                         }
                     }
                     Slider(value: cursor.size, in: 1.0...5.0, step: 0.1)
@@ -75,7 +75,7 @@ struct CursorPanel: View {
                             }
                             .font(.caption2)
                             .buttonStyle(.plain)
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                         }
                     }
                     Slider(value: cursor.rotationIntensity, in: 0...45, step: 1)

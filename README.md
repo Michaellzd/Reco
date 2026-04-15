@@ -70,6 +70,7 @@ Cursor data    ─┘
 
 ## Documentation
 
+- [Development Progress](docs/progress.md)
 - [Project Overview](docs/overview.md)
 - [Feature Specification](docs/features.md)
 - [Architecture](docs/architecture.md)

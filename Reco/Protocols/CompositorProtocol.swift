@@ -15,6 +15,8 @@ protocol CompositorProtocol {
         projectURL: URL,
         settings: EditSettings,
         outputURL: URL,
+        format: ExportFormat,
+        resolution: ExportResolution,
         progress: @escaping (Double) -> Void
     ) async throws
 }

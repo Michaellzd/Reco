@@ -10,7 +10,9 @@ extension RecordingConfig: Codable {
         case captureArea
         case resolution
         case cameraEnabled
+        case cameraDeviceID
         case micEnabled
+        case microphoneDeviceID
         case systemAudioEnabled
     }
 
@@ -21,7 +23,9 @@ extension RecordingConfig: Codable {
         captureArea = try container.decode(CaptureArea.self, forKey: .captureArea)
         resolution = try container.decode(Resolution.self, forKey: .resolution)
         cameraEnabled = try container.decode(Bool.self, forKey: .cameraEnabled)
+        cameraDeviceID = try container.decodeIfPresent(String.self, forKey: .cameraDeviceID)
         micEnabled = try container.decode(Bool.self, forKey: .micEnabled)
+        microphoneDeviceID = try container.decodeIfPresent(String.self, forKey: .microphoneDeviceID)
         systemAudioEnabled = try container.decode(Bool.self, forKey: .systemAudioEnabled)
     }
 
@@ -32,7 +36,9 @@ extension RecordingConfig: Codable {
         try container.encode(captureArea, forKey: .captureArea)
         try container.encode(resolution, forKey: .resolution)
         try container.encode(cameraEnabled, forKey: .cameraEnabled)
+        try container.encodeIfPresent(cameraDeviceID, forKey: .cameraDeviceID)
         try container.encode(micEnabled, forKey: .micEnabled)
+        try container.encodeIfPresent(microphoneDeviceID, forKey: .microphoneDeviceID)
         try container.encode(systemAudioEnabled, forKey: .systemAudioEnabled)
     }
 }

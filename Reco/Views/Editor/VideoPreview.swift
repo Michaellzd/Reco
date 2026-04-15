@@ -9,64 +9,94 @@ struct VideoPreview: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background
-                Color.black
+                RoundedRectangle(cornerRadius: 30, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.96, green: 0.95, blue: 0.92),
+                                Color(red: 0.90, green: 0.89, blue: 0.85)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.black.opacity(0.06))
+                    .padding(18)
 
                 if let image = editorState.previewImage {
                     Image(decorative: image, scale: 1.0)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(
-                            maxWidth: geometry.size.width,
-                            maxHeight: geometry.size.height
+                            maxWidth: geometry.size.width - 56,
+                            maxHeight: geometry.size.height - 56
                         )
+                        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
                 } else {
-                    // Loading / placeholder state
                     VStack(spacing: 12) {
-                        Image(systemName: "film")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.secondary)
-                        Text("Loading preview...")
-                            .font(.caption)
+                        RecoBrandMark(size: 42)
+                        Text("Rendering preview")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(.black.opacity(0.82))
+                        Text("Reco is preparing the current frame from your recording bundle.")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                // Time overlay (bottom-left)
+                VStack {
+                    HStack {
+                        Text("Rendered Preview")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.black.opacity(0.54))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Capsule().fill(Color.white.opacity(0.72)))
+                        Spacer()
+                    }
+                    .padding(18)
+                    Spacer()
+                }
+
                 VStack {
                     Spacer()
                     HStack {
                         Text(formatTime(editorState.currentTime))
-                            .font(.caption.monospacedDigit())
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
                             .background(.ultraThinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .clipShape(Capsule())
                         Spacer()
                     }
-                    .padding(8)
+                    .padding(18)
                 }
 
-                // Play indicator overlay
                 if editorState.isPlaying {
                     VStack {
                         HStack {
                             Spacer()
                             Image(systemName: "play.fill")
-                                .font(.caption)
-                                .padding(6)
+                                .font(.system(size: 12, weight: .bold))
+                                .padding(8)
                                 .background(.ultraThinMaterial)
                                 .clipShape(Circle())
-                            .padding(8)
+                            .padding(18)
                         }
                         Spacer()
                     }
                 }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         .task {
-            await editorState.updatePreview()
+            editorState.schedulePreviewUpdate(delay: .zero)
         }
     }
 

@@ -24,6 +24,8 @@ struct RecordingConfig {
     var captureArea: CaptureArea = .fullScreen
     var resolution: Resolution = .original
     var cameraEnabled: Bool = false
+    var cameraDeviceID: String?
     var micEnabled: Bool = false
+    var microphoneDeviceID: String?
     var systemAudioEnabled: Bool = true
 }

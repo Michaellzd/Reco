@@ -28,7 +28,9 @@ struct RecoApp: App {
                     .frame(width: 400, height: 300)
 
                 case .editing(let projectURL):
-                    EditorView(projectURL: projectURL)
+                    EditorView(projectURL: projectURL) {
+                        appState.newRecording()
+                    }
                 }
             }
             .onChange(of: appState.phase) { oldPhase, newPhase in

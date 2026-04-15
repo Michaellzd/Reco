@@ -330,7 +330,7 @@ struct BackgroundPanel: View {
                     }
                     .font(.caption2)
                     .buttonStyle(.plain)
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
                 }
             }
             Slider(value: value, in: range, step: 1)

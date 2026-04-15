@@ -24,8 +24,14 @@ final class AudioRecorder: NSObject, @unchecked Sendable {
 
     // MARK: - Start
 
-    func start(outputURL: URL) throws {
-        guard let microphone = AVCaptureDevice.default(for: .audio) else {
+    func start(outputURL: URL, deviceID: String? = nil) throws {
+        let microphones = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.microphone, .external],
+            mediaType: .audio,
+            position: .unspecified
+        ).devices
+
+        guard let microphone = microphones.first(where: { $0.uniqueID == deviceID }) ?? AVCaptureDevice.default(for: .audio) else {
             print("[AudioRecorder] No microphone device available, skipping mic capture")
             return
         }

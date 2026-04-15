@@ -1,6 +1,8 @@
 import Foundation
 import AVFoundation
 import ScreenCaptureKit
+import CoreGraphics
+import AppKit
 
 // MARK: - Permission Status
 
@@ -18,6 +20,7 @@ final class PermissionManager {
     var screenRecordingStatus: PermissionStatus = .unknown
     var cameraStatus: PermissionStatus = .unknown
     var microphoneStatus: PermissionStatus = .unknown
+    var screenPermissionNeedsRestartHint: Bool = false
 
     var allRequiredGranted: Bool {
         screenRecordingStatus == .granted
@@ -25,8 +28,8 @@ final class PermissionManager {
 
     // MARK: - Check All
 
-    func checkAllPermissions() async {
-        await checkScreenRecordingPermission()
+    func checkAllPermissions(forceScreenProbe: Bool = false) async {
+        await checkScreenRecordingPermission(forceProbe: forceScreenProbe)
         await checkCameraPermission()
         await checkMicrophonePermission()
     }
@@ -35,19 +38,54 @@ final class PermissionManager {
 
     /// Checks screen recording permission by attempting to fetch shareable content.
     /// ScreenCaptureKit will prompt the user if not yet determined.
-    func checkScreenRecordingPermission() async {
-        do {
-            _ = try await SCShareableContent.current
-            screenRecordingStatus = .granted
-        } catch {
-            screenRecordingStatus = .denied
+    func checkScreenRecordingPermission(forceProbe: Bool = false) async {
+        let preflightGranted = await MainActor.run {
+            CGPreflightScreenCaptureAccess()
         }
+
+        if preflightGranted {
+            await updateScreenRecordingStatus(granted: true, clearRestartHint: true)
+            return
+        }
+
+        let shouldProbe = await MainActor.run {
+            forceProbe || screenPermissionNeedsRestartHint
+        }
+
+        if shouldProbe {
+            do {
+                _ = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+                await updateScreenRecordingStatus(granted: true, clearRestartHint: true)
+                return
+            } catch {
+                // Fall through to denied state. On newer macOS versions this can still
+                // require a relaunch even after the toggle is enabled in System Settings.
+            }
+        }
+
+        await updateScreenRecordingStatus(granted: false, clearRestartHint: false)
     }
 
-    /// Request screen recording permission. On macOS, simply attempting to use
-    /// SCShareableContent triggers the system prompt.
+    /// Request screen recording permission using the system prompt.
     func requestScreenRecordingPermission() async {
-        await checkScreenRecordingPermission()
+        let granted = await MainActor.run {
+            CGRequestScreenCaptureAccess()
+        }
+        await updateScreenRecordingStatus(granted: granted, clearRestartHint: granted)
+    }
+
+    func markScreenSettingsOpened() {
+        screenPermissionNeedsRestartHint = true
+    }
+
+    func relaunchApp() {
+        let bundleURL = Bundle.main.bundleURL
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.openApplication(at: bundleURL, configuration: configuration) { _, _ in
+            DispatchQueue.main.async {
+                NSApp.terminate(nil)
+            }
+        }
     }
 
     // MARK: - Camera
@@ -96,8 +134,17 @@ final class PermissionManager {
 
     /// Opens System Settings to the relevant privacy pane.
     func openSystemSettings() {
+        markScreenSettingsOpened()
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    @MainActor
+    private func updateScreenRecordingStatus(granted: Bool, clearRestartHint: Bool) {
+        screenRecordingStatus = granted ? .granted : .denied
+        if clearRestartHint {
+            screenPermissionNeedsRestartHint = false
         }
     }
 

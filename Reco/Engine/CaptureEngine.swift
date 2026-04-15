@@ -132,7 +132,7 @@ final class CaptureEngine: NSObject, CaptureEngineProtocol, @unchecked Sendable 
             let camera = CameraRecorder()
             self.cameraRecorder = camera
             do {
-                try camera.start(outputURL: cameraURL)
+                try camera.start(outputURL: cameraURL, deviceID: config.cameraDeviceID)
             } catch {
                 print("[CaptureEngine] Camera failed to start: \(error.localizedDescription). Continuing without camera.")
                 self.cameraRecorder = nil
@@ -145,7 +145,7 @@ final class CaptureEngine: NSObject, CaptureEngineProtocol, @unchecked Sendable 
             let mic = AudioRecorder()
             self.audioRecorder = mic
             do {
-                try mic.start(outputURL: micURL)
+                try mic.start(outputURL: micURL, deviceID: config.microphoneDeviceID)
             } catch {
                 print("[CaptureEngine] Microphone failed to start: \(error.localizedDescription). Continuing without mic.")
                 self.audioRecorder = nil

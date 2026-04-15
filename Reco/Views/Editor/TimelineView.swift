@@ -21,7 +21,6 @@ struct TimelineView: View {
             // Timeline strip
             GeometryReader { geometry in
                 let totalWidth = geometry.size.width - handleWidth * 2
-                let visibleDuration = editorState.duration / editorState.zoomLevel
 
                 ZStack(alignment: .leading) {
                     // Thumbnail strip background
@@ -97,7 +96,6 @@ struct TimelineView: View {
                         .font(.caption2)
                 }
             }
-            .menuStyle(.borderless)
             .fixedSize()
 
             Spacer()

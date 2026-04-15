@@ -124,10 +124,10 @@ class AreaSelectorWindow: NSWindow {
             contentRect: screen.frame,
             styleMask: [.borderless],
             backing: .buffered,
-            defer: false,
-            screen: screen
+            defer: false
         )
 
+        self.setFrame(screen.frame, display: false)
         self.level = .screenSaver
         self.isOpaque = false
         self.backgroundColor = NSColor.black.withAlphaComponent(0.2)

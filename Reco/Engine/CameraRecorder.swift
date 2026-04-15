@@ -23,8 +23,14 @@ final class CameraRecorder: NSObject, @unchecked Sendable {
 
     // MARK: - Start
 
-    func start(outputURL: URL) throws {
-        guard let camera = AVCaptureDevice.default(for: .video) else {
+    func start(outputURL: URL, deviceID: String? = nil) throws {
+        let cameras = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera, .external],
+            mediaType: .video,
+            position: .unspecified
+        ).devices
+
+        guard let camera = cameras.first(where: { $0.uniqueID == deviceID }) ?? AVCaptureDevice.default(for: .video) else {
             print("[CameraRecorder] No camera device available, skipping camera capture")
             return
         }

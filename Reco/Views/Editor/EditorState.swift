@@ -56,6 +56,7 @@ final class EditorState {
     // MARK: - Playback Timer
 
     private var playbackTask: Task<Void, Never>?
+    private var previewTask: Task<Void, Never>?
 
     /// Debounce timer for saving settings
     private var saveSettingsTask: Task<Void, Never>?
@@ -111,6 +112,7 @@ final class EditorState {
     // MARK: - Preview
 
     func updatePreview() async {
+        previewTask?.cancel()
         let time = CMTime(seconds: currentTime, preferredTimescale: 600)
         do {
             let image = try await compositor.renderPreviewFrame(
@@ -122,6 +124,17 @@ final class EditorState {
         } catch {
             // In mock mode, errors are not critical
             print("Preview render error: \(error)")
+        }
+    }
+
+    func schedulePreviewUpdate(delay: Duration = .milliseconds(60)) {
+        previewTask?.cancel()
+        previewTask = Task { [weak self] in
+            if delay > .zero {
+                try? await Task.sleep(for: delay)
+            }
+            guard let self, !Task.isCancelled else { return }
+            await self.updatePreview()
         }
     }
 
@@ -151,7 +164,7 @@ final class EditorState {
         isPlaying = false
         playbackTask?.cancel()
         playbackTask = nil
-        Task { await updatePreview() }
+        schedulePreviewUpdate(delay: .zero)
     }
 
     func togglePlayback() {
@@ -166,7 +179,7 @@ final class EditorState {
         let clamped = max(trimStart, min(time, trimEnd))
         currentTime = clamped
         if !isPlaying {
-            Task { await updatePreview() }
+            schedulePreviewUpdate(delay: .milliseconds(40))
         }
     }
 
@@ -220,7 +233,7 @@ final class EditorState {
 
     /// Returns all segment boundaries: [trimStart, splitPoint1, splitPoint2, ..., trimEnd]
     var segmentBoundaries: [TimeInterval] {
-        var boundaries = [trimStart] + splitPoints.filter { $0 > trimStart && $0 < trimEnd } + [trimEnd]
+        let boundaries = [trimStart] + splitPoints.filter { $0 > trimStart && $0 < trimEnd } + [trimEnd]
         return boundaries.sorted()
     }
 
@@ -257,11 +270,13 @@ final class EditorState {
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = CGSize(width: 160, height: 90)
 
-        let count = Int(duration / thumbnailInterval)
+        let maxThumbnailCount = 48
+        let effectiveInterval = max(thumbnailInterval, duration / Double(maxThumbnailCount))
+        let count = max(Int(ceil(duration / effectiveInterval)), 1)
         var images: [CGImage] = []
 
         for i in 0..<count {
-            let time = CMTime(seconds: Double(i) * thumbnailInterval, preferredTimescale: 600)
+            let time = CMTime(seconds: Double(i) * effectiveInterval, preferredTimescale: 600)
             do {
                 let (image, _) = try await generator.image(at: time)
                 images.append(image)
@@ -325,15 +340,20 @@ final class EditorState {
                 projectURL: projectURL,
                 settings: editSettings,
                 outputURL: outputURL,
+                format: format,
+                resolution: resolution,
                 progress: { [weak self] progress in
                     Task { @MainActor [weak self] in
                         self?.exportProgress = progress
                     }
                 }
             )
+            isExporting = false
+            exportTask = nil
             exportComplete = true
         } catch {
             isExporting = false
+            exportTask = nil
             throw error
         }
     }
@@ -342,6 +362,7 @@ final class EditorState {
         exportTask?.cancel()
         exportTask = nil
         isExporting = false
+        exportComplete = false
         exportProgress = 0
     }
 
@@ -360,7 +381,7 @@ final class EditorState {
 
     func settingsDidChange() {
         if !isPlaying {
-            Task { await updatePreview() }
+            schedulePreviewUpdate()
         }
         // Debounced save to project bundle
         saveSettingsTask?.cancel()

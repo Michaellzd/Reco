@@ -229,6 +229,8 @@ extension ScreenRecorder: SCStreamOutput {
             handleVideoSampleBuffer(sampleBuffer)
         case .audio:
             handleAudioSampleBuffer(sampleBuffer)
+        case .microphone:
+            break
         @unknown default:
             break
         }

@@ -5,99 +5,147 @@ struct RecordingPanel: View {
     @State private var showDiscardConfirmation = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Timer display
-            Text(formattedTime(appState.elapsedTime))
-                .font(.system(.title2, design: .monospaced))
-                .fontWeight(.medium)
-                .foregroundStyle(.white)
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top) {
+                HStack(spacing: 10) {
+                    RecoBrandMark(size: 28)
 
-            // Recording indicator
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(appState.isPaused ? .orange : .red)
-                    .frame(width: 8, height: 8)
-                Text(appState.isPaused ? "Paused" : "Recording")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reco")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        Text(appState.isPaused ? "Recording paused" : "Recording live")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.68))
+                    }
+                }
+
+                Spacer()
+
+                Text(appState.isPaused ? "Paused" : "Live")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(appState.isPaused ? Color.orange : Color.recoAccent)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill((appState.isPaused ? Color.orange : Color.recoAccent).opacity(0.16))
+                    )
             }
 
-            Divider()
-                .background(Color.white.opacity(0.2))
+            if appState.recordingConfig.cameraEnabled {
+                CameraPreviewSurface(
+                    enabled: !appState.isPaused,
+                    deviceID: appState.recordingConfig.cameraDeviceID,
+                    cornerRadius: 24
+                )
+                .frame(height: 148)
+                .overlay(alignment: .topLeading) {
+                    Text("Camera")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(Color.black.opacity(0.26)))
+                        .padding(12)
+                }
+            }
 
-            // Control buttons
-            VStack(spacing: 12) {
-                // Stop button
-                Button {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(formattedTime(appState.elapsedTime))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+
+                Text("The floating panel stays outside the captured output.")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.64))
+            }
+
+            VStack(spacing: 10) {
+                actionButton(
+                    title: "Stop",
+                    icon: "stop.fill",
+                    fill: Color.recoAccent,
+                    textColor: .white
+                ) {
                     Task {
                         try? await appState.stopRecording()
                     }
-                } label: {
-                    HStack {
-                        Image(systemName: "stop.circle.fill")
-                            .font(.title3)
-                        Text("Stop")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                .controlSize(.regular)
 
-                // Pause / Resume button
-                Button {
-                    if appState.isPaused {
-                        appState.resumeRecording()
-                    } else {
-                        appState.pauseRecording()
+                HStack(spacing: 10) {
+                    actionButton(
+                        title: appState.isPaused ? "Resume" : "Pause",
+                        icon: appState.isPaused ? "play.fill" : "pause.fill",
+                        fill: Color.white.opacity(0.10),
+                        textColor: .white
+                    ) {
+                        if appState.isPaused {
+                            appState.resumeRecording()
+                        } else {
+                            appState.pauseRecording()
+                        }
                     }
-                } label: {
-                    HStack {
-                        Image(systemName: appState.isPaused ? "play.circle.fill" : "pause.circle.fill")
-                            .font(.title3)
-                        Text(appState.isPaused ? "Resume" : "Pause")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
 
-                // Delete button
-                Button {
-                    showDiscardConfirmation = true
-                } label: {
-                    HStack {
-                        Image(systemName: "trash")
-                            .font(.title3)
-                        Text("Discard")
+                    actionButton(
+                        title: "Discard",
+                        icon: "trash",
+                        fill: Color.white.opacity(0.10),
+                        textColor: .white
+                    ) {
+                        showDiscardConfirmation = true
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .alert("Discard Recording?", isPresented: $showDiscardConfirmation) {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Discard", role: .destructive) {
-                        appState.discardRecording()
-                    }
-                } message: {
-                    Text("This will delete the current recording and return to setup.")
                 }
             }
         }
-        .padding(16)
-        .frame(width: 180)
+        .padding(18)
+        .frame(width: 252)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, .dark)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(Color(red: 0.10, green: 0.10, blue: 0.11).opacity(0.94))
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.24), radius: 20, x: 0, y: 12)
+        .alert("Discard Recording?", isPresented: $showDiscardConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Discard", role: .destructive) {
+                appState.discardRecording()
+            }
+        } message: {
+            Text("This will delete the current recording and return to setup.")
+        }
     }
 
-    // MARK: - Time Formatting
+    private func actionButton(
+        title: String,
+        icon: String,
+        fill: Color,
+        textColor: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .bold))
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(fill)
+            )
+            .foregroundStyle(textColor)
+        }
+        .buttonStyle(.plain)
+    }
 
     private func formattedTime(_ interval: TimeInterval) -> String {
         let totalSeconds = Int(interval)

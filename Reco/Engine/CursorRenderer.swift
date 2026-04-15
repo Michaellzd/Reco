@@ -217,7 +217,6 @@ final class CursorRenderer {
         let posNow = interpolatedPosition(at: timestamp, events: events)
 
         let dx = posNow.x - posBefore.x
-        let dy = posNow.y - posBefore.y
 
         // Rotation proportional to horizontal movement, clamped
         let maxRotation = 0.3  // ~17 degrees max

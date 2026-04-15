@@ -38,7 +38,7 @@ struct CameraPanel: View {
                             }
                             .font(.caption2)
                             .buttonStyle(.plain)
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                         }
                     }
                     Slider(value: camera.size, in: 10...50, step: 1)
@@ -66,7 +66,7 @@ struct CameraPanel: View {
                             }
                             .font(.caption2)
                             .buttonStyle(.plain)
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                         }
                     }
                     Slider(value: camera.cornerRadius, in: 0...50, step: 1)

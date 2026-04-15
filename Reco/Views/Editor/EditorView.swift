@@ -4,19 +4,17 @@ import SwiftUI
 /// Registers keyboard shortcuts for playback, stepping, and split.
 struct EditorView: View {
     @State var editorState: EditorState
+    private let onNewRecording: (() -> Void)?
 
-    init(projectURL: URL, duration: TimeInterval = 0) {
+    init(projectURL: URL, duration: TimeInterval = 0, onNewRecording: (() -> Void)? = nil) {
         _editorState = State(initialValue: EditorState(projectURL: projectURL, duration: duration))
+        self.onNewRecording = onNewRecording
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top bar
             topBar
 
-            Divider()
-
-            // Center: HSplitView with preview (left ~70%) and settings (right ~30%)
             HSplitView {
                 VideoPreview(editorState: editorState)
                     .frame(minWidth: 400)
@@ -25,15 +23,12 @@ struct EditorView: View {
                 SettingsPanel(editorState: editorState)
                     .frame(minWidth: 240, idealWidth: 280, maxWidth: 360)
             }
-
-            Divider()
-
-            // Bottom: Timeline
             TimelineView(editorState: editorState)
         }
         .frame(minWidth: 900, minHeight: 600)
-        .background(Color(nsColor: .windowBackgroundColor))
-        // Keyboard shortcuts
+        .background(Color.recoCanvas)
+        .tint(.recoAccent)
+        .focusable()
         .onKeyPress(.space) {
             editorState.togglePlayback()
             return .handled
@@ -46,25 +41,27 @@ struct EditorView: View {
             editorState.stepForward()
             return .handled
         }
-        .onKeyPress(.leftArrow, modifiers: .command) {
-            editorState.jumpToStart()
-            return .handled
-        }
-        .onKeyPress(.rightArrow, modifiers: .command) {
-            editorState.jumpToEnd()
-            return .handled
-        }
-        .onKeyPress(characters: CharacterSet(charactersIn: "s")) {
-            editorState.splitAtPlayhead()
-            return .handled
-        }
-        .onKeyPress(characters: CharacterSet(charactersIn: "S"), modifiers: [.command, .shift]) {
-            editorState.splitAtPlayhead()
-            return .handled
-        }
         .onKeyPress(.delete) {
             editorState.deleteSelectedSegment()
             return .handled
+        }
+        .onKeyPress(phases: [.down]) { keyPress in
+            switch (keyPress.key, keyPress.modifiers) {
+            case (.leftArrow, [.command]):
+                editorState.jumpToStart()
+                return .handled
+            case (.rightArrow, [.command]):
+                editorState.jumpToEnd()
+                return .handled
+            case (_, _) where keyPress.characters == "s":
+                editorState.splitAtPlayhead()
+                return .handled
+            case (_, _) where keyPress.characters == "S" && keyPress.modifiers == [.command, .shift]:
+                editorState.splitAtPlayhead()
+                return .handled
+            default:
+                return .ignored
+            }
         }
         .sheet(isPresented: $editorState.showExportSheet) {
             ExportView(editorState: editorState)
@@ -75,17 +72,34 @@ struct EditorView: View {
 
     private var topBar: some View {
         HStack(spacing: 12) {
-            // Filename
-            Text(editorState.projectURL.lastPathComponent)
-                .font(.headline)
-                .lineLimit(1)
+            HStack(spacing: 12) {
+                RecoBrandMark(size: 22)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Editor")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+
+                    Text(editorState.projectURL.lastPathComponent)
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .lineLimit(1)
+                }
+            }
+
+            if let onNewRecording {
+                Button("New Recording") {
+                    onNewRecording()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
 
             Spacer()
 
-            // FPS selector
             HStack(spacing: 4) {
                 Text("FPS")
-                    .font(.caption)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.secondary)
                 Picker("", selection: Binding(
                     get: { editorState.editSettings.fps },
@@ -101,19 +115,22 @@ struct EditorView: View {
                 .fixedSize()
                 .labelsHidden()
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(Capsule().fill(Color.white.opacity(0.84)))
 
-            // Camera toggle shortcut
             Button {
                 editorState.editSettings.camera.hidden.toggle()
                 editorState.settingsDidChange()
             } label: {
                 Image(systemName: editorState.editSettings.camera.hidden ? "video.slash" : "video")
-                    .font(.body)
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Color.white.opacity(0.84)))
             }
             .buttonStyle(.plain)
             .help("Toggle camera visibility")
 
-            // Export button
             Button {
                 editorState.showExportSheet = true
             } label: {
@@ -125,8 +142,9 @@ struct EditorView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(Color.white.opacity(0.78))
     }
 }
 
